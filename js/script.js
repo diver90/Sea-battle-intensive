@@ -9,26 +9,86 @@ const header = document.querySelector('.header');
 let fired = false;
 
 const game = {
-    ships: [
-        {
-            location:['26','36','46','56'],
-            hit:['','','','',]
-        },
-        {
-            location:['11','12','13'],
-            hit:['','','',]
-        },
-        {
-            location:['69', '79'],
-            hit:['','',]
-        },
-        {
-            location:['32'],
-            hit:['',]
-        },
-    ],
-    shipCount: 4
+    ships: []   ,
+    shipCount: 0,
+    optionShip: {
+        count: [1, 2, 3, 4],
+        size: [4, 3, 2, 1],
+    },
+    collision: [],
+    generateShip() {
+        for (let i = 0; i < this.optionShip.count.length; i++) {
+            for (let j = 0; j < this.optionShip.count.length; j++) {
+                const size = this.optionShip.size[i];
+                const ship = this.generateOptionShip(size);
+                this.ships.push(ship);
+                this.shipCount++;
+            }
+        }
+
+    },
+
+    generateOptionShip(shipSize) {
+        const ship = {
+            hit: [],
+            location: [],
+        };
+
+        const direction = Math.random() < 0.5;
+
+        let x, y;
+        if (direction) {
+            x = Math.floor(Math.random() * 10);
+            y = Math.floor(Math.random() * 10 - shipSize);
+        } else {
+            x = Math.floor(Math.random() * 10 - shipSize);
+            y = Math.floor(Math.random() * 10);
+        }
+
+        for (let i = 0; i < shipSize; i++) {
+            if (direction) {
+                ship.location.push(x + '' + (y + i))
+            } else {
+                ship.location.push((x + i) + '' + y)
+            }
+            ship.hit.push('');
+        }
+
+        if(this.checkCollision(ship.location)){
+            return this.generateOptionShip(shipSize);
+        }
+
+        this.addCollision(ship.location);
+        return ship;
+    },
+    checkCollision(location) {
+        for(const coord of location){
+            if (this.collision.includes(coord)){
+                return true;
+            }
+        }
+    },
+    addCollision(location){
+        for (let i = 0; i< location.length; i++){
+            const startCoordX = location[i][0] - 1;
+            for (let j = startCoordX; j < startCoordX + 3; j++){
+                const startCoordY = location[i][1] - 1;
+                for (let z = startCoordY; z < startCoordY + 3; z++){
+                    if ( j >= 0 && j < 10 && z >= 0 && z < 10){
+                        const  coord = j + '' + z;
+                        if (!this.collision.includes(coord)){
+                            this.collision.push(coord)
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+
 };
+
+
 
 const play = {
     record: localStorage.getItem('seaBattleRecord') || 0,
@@ -64,29 +124,29 @@ const show = {
 
 const fire = (event) => {
     const target = event.target;
-    if (target.classList.length !== 0 || target.tagName !== 'TD') return;
+    if (target.classList.length !== 0 || target.tagName !== 'TD' || game.shipCount === play.dead) return;
     show.miss(target);
     play.updateData = 'shot';
 
-    for(let i = 0; i < game.ships.length; i++){
+    for (let i = 0; i < game.ships.length; i++) {
         const ship = game.ships[i];
         const index = ship.location.indexOf(target.id);
-        if (index >= 0){
+        if (index >= 0) {
             show.hit(target);
             play.updateData = 'hit';
             ship.hit[index] = 'x';
             const life = ship.hit.indexOf('');
-            if (life < 0 ){
+            if (life < 0) {
                 play.updateData = 'dead';
-                for (const id of ship.location){
+                for (const id of ship.location) {
                     show.dead(document.getElementById(id));
                 }
 
-                if (game.shipCount === play.dead){
+                if (game.shipCount === play.dead) {
                     header.textContent = 'Победа! Все корабли потоплены!';
                     header.style.color = 'red';
 
-                    if (play.shot < play.record || play.record === 0){
+                    if (play.shot < play.record || play.record === 0) {
                         localStorage.setItem('seaBattleRecord', play.shot);
                         play.record = play.shot;
                         play.render();
@@ -100,9 +160,14 @@ const fire = (event) => {
 const init = () => {
     enemy.addEventListener('click', fire);
     play.render();
-
+    game.generateShip();
     again.addEventListener('click', () => {
         location.reload();
-    })
+    });
+    record.addEventListener('dblclick', () => {
+        localStorage.clear();
+        play.record = 0;
+        play.render();
+    });
 };
 init();
