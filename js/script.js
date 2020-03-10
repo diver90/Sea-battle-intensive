@@ -18,7 +18,7 @@ const game = {
     collision: [],
     generateShip() {
         for (let i = 0; i < this.optionShip.count.length; i++) {
-            for (let j = 0; j < this.optionShip.count.length; j++) {
+            for (let j = 0; j < this.optionShip.count[i]; j++) {
                 const size = this.optionShip.size[i];
                 const ship = this.generateOptionShip(size);
                 this.ships.push(ship);
@@ -171,3 +171,5 @@ const init = () => {
     });
 };
 init();
+
+console.log(game);
